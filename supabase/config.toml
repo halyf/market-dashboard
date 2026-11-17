@@ -1,0 +1,12 @@
+# Config mínima para o deploy das Edge Functions via Supabase CLI.
+# A autenticação é feita manualmente dentro de cada função (compara o Bearer
+# com SUPABASE_SERVICE_ROLE_KEY), por isso verify_jwt fica desabilitado.
+
+[functions.fetch-market-data]
+verify_jwt = false
+
+[functions.fetch-economic-events]
+verify_jwt = false
+
+[functions.fetch-br-events]
+verify_jwt = false

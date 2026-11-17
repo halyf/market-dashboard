@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_overview" targetNamespace="https://github.com/halyfsoares/market-dashboard/bpmn" exporter="market-dashboard/generate_bpmn.py" exporterVersion="1.0">
+  <bpmn:collaboration id="Collab_overview">
+    <bpmn:participant id="Ext_yahoo" name="Yahoo Finance (EUA + B3)" />
+    <bpmn:participant id="Ext_coingecko" name="CoinGecko (cripto)" />
+    <bpmn:participant id="Ext_fxmacro" name="FXMacroData (calendário EUA)" />
+    <bpmn:participant id="Ext_biquote" name="Biquote.io (calendário BR)" />
+    <bpmn:participant id="Supabase" name="Supabase Cloud" processRef="Process_Supabase" />
+    <bpmn:participant id="Dashboard" name="Usuário · Dashboard" processRef="Process_Dashboard" />
+    <bpmn:messageFlow id="Msg_21" name="Fetch (JSON)" sourceRef="sp_market" targetRef="Ext_yahoo" />
+    <bpmn:messageFlow id="Msg_22" name="Fetch (JSON)" sourceRef="sp_market" targetRef="Ext_coingecko" />
+    <bpmn:messageFlow id="Msg_23" name="Fetch (JSON)" sourceRef="sp_econ" targetRef="Ext_fxmacro" />
+    <bpmn:messageFlow id="Msg_24" name="Fetch (JSON)" sourceRef="sp_br" targetRef="Ext_biquote" />
+    <bpmn:messageFlow id="Msg_25" name="GET REST" sourceRef="t_req" targetRef="s_rest" />
+    <bpmn:messageFlow id="Msg_26" name="JSON" sourceRef="e_rest" targetRef="c_data" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Supabase" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Supabase">
+      <bpmn:lane id="Lane_orq" name="Orquestração">
+        <bpmn:flowNodeRef>s_hora</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_disp1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>s_6h</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_disp2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>s_6h15</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_disp3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>s_diario</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_edge" name="Edge Functions">
+        <bpmn:flowNodeRef>sp_market</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sp_econ</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sp_br</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_3</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_db" name="PostgreSQL">
+        <bpmn:flowNodeRef>ds_price</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ds_assets</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ds_events</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>s_rest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_rest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_rest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_del</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>t_vac</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>e_4</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="s_hora" name="A cada hora"><bpmn:outgoing>Flow_1</bpmn:outgoing><bpmn:timerEventDefinition /></bpmn:startEvent>
+    <bpmn:serviceTask id="t_disp1" name="Disparar função (pg_net · POST)"><bpmn:incoming>Flow_1</bpmn:incoming><bpmn:outgoing>Flow_4</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:startEvent id="s_6h" name="A cada 6 h"><bpmn:outgoing>Flow_2</bpmn:outgoing><bpmn:timerEventDefinition /></bpmn:startEvent>
+    <bpmn:serviceTask id="t_disp2" name="Disparar função (pg_net · POST)"><bpmn:incoming>Flow_2</bpmn:incoming><bpmn:outgoing>Flow_5</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:startEvent id="s_6h15" name="A cada 6 h (+15 min)"><bpmn:outgoing>Flow_3</bpmn:outgoing><bpmn:timerEventDefinition /></bpmn:startEvent>
+    <bpmn:serviceTask id="t_disp3" name="Disparar função (pg_net · POST)"><bpmn:incoming>Flow_3</bpmn:incoming><bpmn:outgoing>Flow_6</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:startEvent id="s_diario" name="Diário 03:00"><bpmn:outgoing>Flow_10</bpmn:outgoing><bpmn:timerEventDefinition /></bpmn:startEvent>
+    <bpmn:subProcess id="sp_market" name="fetch-market-data (Edge Function)"><bpmn:incoming>Flow_4</bpmn:incoming><bpmn:outgoing>Flow_7</bpmn:outgoing><bpmn:dataInputAssociation id="DIn_28"><bpmn:sourceRef>ds_assets</bpmn:sourceRef></bpmn:dataInputAssociation><bpmn:dataOutputAssociation id="DOut_27"><bpmn:targetRef>ds_price</bpmn:targetRef></bpmn:dataOutputAssociation></bpmn:subProcess>
+    <bpmn:subProcess id="sp_econ" name="fetch-economic-events (Edge Function)"><bpmn:incoming>Flow_5</bpmn:incoming><bpmn:outgoing>Flow_8</bpmn:outgoing><bpmn:dataOutputAssociation id="DOut_29"><bpmn:targetRef>ds_events</bpmn:targetRef></bpmn:dataOutputAssociation></bpmn:subProcess>
+    <bpmn:subProcess id="sp_br" name="fetch-br-events (Edge Function)"><bpmn:incoming>Flow_6</bpmn:incoming><bpmn:outgoing>Flow_9</bpmn:outgoing><bpmn:dataOutputAssociation id="DOut_30"><bpmn:targetRef>ds_events</bpmn:targetRef></bpmn:dataOutputAssociation></bpmn:subProcess>
+    <bpmn:endEvent id="e_1" name="Concluído"><bpmn:incoming>Flow_7</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="e_2" name="Concluído"><bpmn:incoming>Flow_8</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="e_3" name="Concluído"><bpmn:incoming>Flow_9</bpmn:incoming></bpmn:endEvent>
+    <bpmn:dataStoreReference id="ds_price" name="price_history" dataStoreRef="DataStore_price_history" />
+    <bpmn:dataStoreReference id="ds_assets" name="assets" dataStoreRef="DataStore_assets" />
+    <bpmn:dataStoreReference id="ds_events" name="economic_events" dataStoreRef="DataStore_economic_events" />
+    <bpmn:startEvent id="s_rest"><bpmn:outgoing>Flow_13</bpmn:outgoing><bpmn:messageEventDefinition /></bpmn:startEvent>
+    <bpmn:serviceTask id="t_rest" name="API REST (RLS · só SELECT)"><bpmn:incoming>Flow_13</bpmn:incoming><bpmn:outgoing>Flow_14</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="e_rest"><bpmn:incoming>Flow_14</bpmn:incoming><bpmn:messageEventDefinition /></bpmn:endEvent>
+    <bpmn:serviceTask id="t_del" name="DELETE preços &gt; 90 dias"><bpmn:incoming>Flow_10</bpmn:incoming><bpmn:outgoing>Flow_11</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="t_vac" name="VACUUM price_history"><bpmn:incoming>Flow_11</bpmn:incoming><bpmn:outgoing>Flow_12</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="e_4" name="Retenção concluída"><bpmn:incoming>Flow_12</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="s_hora" targetRef="t_disp1" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="s_6h" targetRef="t_disp2" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="s_6h15" targetRef="t_disp3" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="t_disp1" targetRef="sp_market" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="t_disp2" targetRef="sp_econ" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="t_disp3" targetRef="sp_br" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="sp_market" targetRef="e_1" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="sp_econ" targetRef="e_2" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="sp_br" targetRef="e_3" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="s_diario" targetRef="t_del" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="t_del" targetRef="t_vac" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="t_vac" targetRef="e_4" />
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="s_rest" targetRef="t_rest" />
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="t_rest" targetRef="e_rest" />
+  </bpmn:process>
+  <bpmn:process id="Process_Dashboard" isExecutable="false">
+    <bpmn:startEvent id="s_user" name="Usuário acessa"><bpmn:outgoing>Flow_15</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:task id="t_load" name="Carregar HTML/JS (GitHub Pages)"><bpmn:incoming>Flow_15</bpmn:incoming><bpmn:outgoing>Flow_16</bpmn:outgoing></bpmn:task>
+    <bpmn:sendTask id="t_req" name="Solicitar dados (anon key)"><bpmn:incoming>Flow_16</bpmn:incoming><bpmn:outgoing>Flow_20</bpmn:outgoing></bpmn:sendTask>
+    <bpmn:intermediateCatchEvent id="c_data" name="Dados recebidos"><bpmn:incoming>Flow_20</bpmn:incoming><bpmn:outgoing>Flow_17</bpmn:outgoing><bpmn:messageEventDefinition /></bpmn:intermediateCatchEvent>
+    <bpmn:scriptTask id="t_calc" name="Calcular indicadores e termômetro"><bpmn:incoming>Flow_17</bpmn:incoming><bpmn:outgoing>Flow_18</bpmn:outgoing></bpmn:scriptTask>
+    <bpmn:task id="t_render" name="Renderizar gauge, cards e calendário"><bpmn:incoming>Flow_18</bpmn:incoming><bpmn:outgoing>Flow_19</bpmn:outgoing></bpmn:task>
+    <bpmn:endEvent id="e_dash" name="Dashboard atualizado"><bpmn:incoming>Flow_19</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="s_user" targetRef="t_load" />
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="t_load" targetRef="t_req" />
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="c_data" targetRef="t_calc" />
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="t_calc" targetRef="t_render" />
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="t_render" targetRef="e_dash" />
+    <bpmn:sequenceFlow id="Flow_20" sourceRef="t_req" targetRef="c_data" />
+  </bpmn:process>
+  <bpmn:dataStore id="DataStore_assets" name="assets" />
+  <bpmn:dataStore id="DataStore_economic_events" name="economic_events" />
+  <bpmn:dataStore id="DataStore_price_history" name="price_history" />
+  <bpmndi:BPMNDiagram id="Diagram_overview">
+    <bpmndi:BPMNPlane id="Plane_overview" bpmnElement="Collab_overview">
+      <bpmndi:BPMNShape id="Shape_Ext_yahoo" bpmnElement="Ext_yahoo" isHorizontal="true"><dc:Bounds x="200" y="20" width="140" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Ext_coingecko" bpmnElement="Ext_coingecko" isHorizontal="true"><dc:Bounds x="360" y="20" width="140" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Ext_fxmacro" bpmnElement="Ext_fxmacro" isHorizontal="true"><dc:Bounds x="580" y="20" width="140" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Ext_biquote" bpmnElement="Ext_biquote" isHorizontal="true"><dc:Bounds x="880" y="20" width="140" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Supabase" bpmnElement="Supabase" isHorizontal="true"><dc:Bounds x="40" y="140" width="1400" height="450" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_orq" bpmnElement="Lane_orq" isHorizontal="true"><dc:Bounds x="70" y="140" width="1370" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_edge" bpmnElement="Lane_edge" isHorizontal="true"><dc:Bounds x="70" y="290" width="1370" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_db" bpmnElement="Lane_db" isHorizontal="true"><dc:Bounds x="70" y="440" width="1370" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Dashboard" bpmnElement="Dashboard" isHorizontal="true"><dc:Bounds x="40" y="650" width="1060" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_s_hora" bpmnElement="s_hora"><dc:Bounds x="142" y="197" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="125" y="237" width="70" height="15" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_disp1" bpmnElement="t_disp1"><dc:Bounds x="205" y="180" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_s_6h" bpmnElement="s_6h"><dc:Bounds x="442" y="197" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="428" y="237" width="64" height="15" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_disp2" bpmnElement="t_disp2"><dc:Bounds x="505" y="180" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_s_6h15" bpmnElement="s_6h15"><dc:Bounds x="742" y="197" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="728" y="237" width="64" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_disp3" bpmnElement="t_disp3"><dc:Bounds x="805" y="180" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_s_diario" bpmnElement="s_diario"><dc:Bounds x="1042" y="197" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1084" y="201" width="41" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_sp_market" bpmnElement="sp_market" isExpanded="false"><dc:Bounds x="230" y="325" width="200" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_sp_econ" bpmnElement="sp_econ" isExpanded="false"><dc:Bounds x="530" y="325" width="160" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_sp_br" bpmnElement="sp_br" isExpanded="false"><dc:Bounds x="830" y="325" width="160" height="80" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_e_1" bpmnElement="e_1"><dc:Bounds x="462" y="347" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="451" y="387" width="58" height="15" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_e_2" bpmnElement="e_2"><dc:Bounds x="722" y="347" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="711" y="387" width="58" height="15" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_e_3" bpmnElement="e_3"><dc:Bounds x="1007" y="347" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="996" y="387" width="58" height="15" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_ds_price" bpmnElement="ds_price"><dc:Bounds x="235" y="490" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_ds_assets" bpmnElement="ds_assets"><dc:Bounds x="355" y="490" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_ds_events" bpmnElement="ds_events"><dc:Bounds x="735" y="490" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_s_rest" bpmnElement="s_rest"><dc:Bounds x="432" y="497" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_rest" bpmnElement="t_rest"><dc:Bounds x="505" y="480" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_e_rest" bpmnElement="e_rest"><dc:Bounds x="632" y="497" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_del" bpmnElement="t_del"><dc:Bounds x="1095" y="480" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_vac" bpmnElement="t_vac"><dc:Bounds x="1245" y="480" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_e_4" bpmnElement="e_4"><dc:Bounds x="1382" y="497" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1371" y="537" width="58" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_s_user" bpmnElement="s_user"><dc:Bounds x="142" y="707" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="137" y="747" width="47" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_load" bpmnElement="t_load"><dc:Bounds x="245" y="690" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_req" bpmnElement="t_req"><dc:Bounds x="425" y="690" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_c_data" bpmnElement="c_data"><dc:Bounds x="632" y="707" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="621" y="747" width="58" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_calc" bpmnElement="t_calc"><dc:Bounds x="725" y="690" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_t_render" bpmnElement="t_render"><dc:Bounds x="875" y="690" width="110" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_e_dash" bpmnElement="e_dash"><dc:Bounds x="1042" y="707" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1028" y="747" width="64" height="28" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_1" bpmnElement="Flow_1"><di:waypoint x="178" y="215" /><di:waypoint x="205" y="215" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_2" bpmnElement="Flow_2"><di:waypoint x="478" y="215" /><di:waypoint x="505" y="215" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_3" bpmnElement="Flow_3"><di:waypoint x="778" y="215" /><di:waypoint x="805" y="215" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_4" bpmnElement="Flow_4"><di:waypoint x="260" y="250" /><di:waypoint x="260" y="325" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_5" bpmnElement="Flow_5"><di:waypoint x="560" y="250" /><di:waypoint x="560" y="325" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_6" bpmnElement="Flow_6"><di:waypoint x="860" y="250" /><di:waypoint x="860" y="325" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_7" bpmnElement="Flow_7"><di:waypoint x="430" y="365" /><di:waypoint x="462" y="365" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_8" bpmnElement="Flow_8"><di:waypoint x="690" y="365" /><di:waypoint x="722" y="365" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_9" bpmnElement="Flow_9"><di:waypoint x="990" y="365" /><di:waypoint x="1007" y="365" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_10" bpmnElement="Flow_10"><di:waypoint x="1060" y="233" /><di:waypoint x="1060" y="515" /><di:waypoint x="1095" y="515" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_11" bpmnElement="Flow_11"><di:waypoint x="1205" y="515" /><di:waypoint x="1245" y="515" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_12" bpmnElement="Flow_12"><di:waypoint x="1355" y="515" /><di:waypoint x="1382" y="515" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_13" bpmnElement="Flow_13"><di:waypoint x="468" y="515" /><di:waypoint x="505" y="515" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_14" bpmnElement="Flow_14"><di:waypoint x="615" y="515" /><di:waypoint x="632" y="515" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_15" bpmnElement="Flow_15"><di:waypoint x="178" y="725" /><di:waypoint x="245" y="725" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_16" bpmnElement="Flow_16"><di:waypoint x="355" y="725" /><di:waypoint x="425" y="725" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_17" bpmnElement="Flow_17"><di:waypoint x="668" y="725" /><di:waypoint x="725" y="725" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_18" bpmnElement="Flow_18"><di:waypoint x="835" y="725" /><di:waypoint x="875" y="725" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_19" bpmnElement="Flow_19"><di:waypoint x="985" y="725" /><di:waypoint x="1042" y="725" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_20" bpmnElement="Flow_20"><di:waypoint x="535" y="725" /><di:waypoint x="632" y="725" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Msg_21" bpmnElement="Msg_21"><di:waypoint x="325" y="325" /><di:waypoint x="325" y="70" /><bpmndi:BPMNLabel><dc:Bounds x="321" y="97" width="70" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Msg_22" bpmnElement="Msg_22"><di:waypoint x="395" y="325" /><di:waypoint x="395" y="70" /><bpmndi:BPMNLabel><dc:Bounds x="399" y="97" width="70" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Msg_23" bpmnElement="Msg_23"><di:waypoint x="650" y="325" /><di:waypoint x="650" y="70" /><bpmndi:BPMNLabel><dc:Bounds x="654" y="97" width="70" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Msg_24" bpmnElement="Msg_24"><di:waypoint x="950" y="325" /><di:waypoint x="950" y="70" /><bpmndi:BPMNLabel><dc:Bounds x="954" y="97" width="70" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Msg_25" bpmnElement="Msg_25"><di:waypoint x="450" y="690" /><di:waypoint x="450" y="533" /><bpmndi:BPMNLabel><dc:Bounds x="446" y="612" width="46" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Msg_26" bpmnElement="Msg_26"><di:waypoint x="650" y="533" /><di:waypoint x="650" y="707" /><bpmndi:BPMNLabel><dc:Bounds x="654" y="612" width="23" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_DOut_27" bpmnElement="DOut_27"><di:waypoint x="260" y="405" /><di:waypoint x="260" y="490" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_DIn_28" bpmnElement="DIn_28"><di:waypoint x="380" y="490" /><di:waypoint x="380" y="405" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_DOut_29" bpmnElement="DOut_29"><di:waypoint x="680" y="405" /><di:waypoint x="680" y="515" /><di:waypoint x="735" y="515" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_DOut_30" bpmnElement="DOut_30"><di:waypoint x="880" y="405" /><di:waypoint x="880" y="515" /><di:waypoint x="785" y="515" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
