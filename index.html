@@ -1253,12 +1253,22 @@ function buildAsset(a, rank, history) {
   return { rank, name: a.name, ticker: a.symbol, price, change, sma50, sma200, days: 0, prices, timestamps };
 }
 
+async function fetchHistory(assetId, limit = 300) {
+  const { data, error } = await supabase
+    .from("price_history")
+    .select("asset_id, price, timestamp")
+    .eq("asset_id", assetId)
+    .order("timestamp", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data.reverse(); // volta para ordem crescente
+}
+
 async function load() {
   try {
     const { data: assets, error: eA } = await supabase.from("assets").select("id, symbol, name, asset_type, description").order("symbol");
     if (eA) throw eA;
-    const { data: hist, error: eH } = await supabase.from("price_history").select("asset_id, price, timestamp").order("timestamp");
-    if (eH) throw eH;
+    const hist = (await Promise.all(assets.map(a => fetchHistory(a.id)))).flat();
 
     const start = new Date(); start.setUTCHours(0,0,0,0);
     const end = new Date(); end.setUTCDate(end.getUTCDate() + 1); end.setUTCHours(23,59,59,999);
