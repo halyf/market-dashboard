@@ -37,8 +37,6 @@ Cada estratégia vota em compra, neutro ou venda para cada ativo.
 | Bollinger 20,2 | %B ≤ 0,2 (preço perto da banda inferior) | %B ≥ 0,8 (preço perto da banda superior) | Reversão à média |
 | Ichimoku | Preço acima da nuvem e Tenkan acima da Kijun | Preço abaixo da nuvem e Tenkan abaixo da Kijun | Tendência e posição |
 
-Nos cards, RSI, MACD, Bollinger e Ichimoku são aproximações calculadas a partir de SMA50, SMA200 e preço (ver [Limitações](#limitações)). O gráfico de detalhe usa o cálculo convencional.
-
 ## Como a confluência é calculada
 
 **Por ativo.** Cada voto vale 85 (compra), 50 (neutro) ou 20 (venda). A temperatura do ativo é a média dos cinco votos. O sinal final é compra ou venda quando pelo menos 3 estratégias concordam e superam as opostas. Caso contrário, é neutro.
