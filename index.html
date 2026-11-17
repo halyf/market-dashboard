@@ -1086,6 +1086,16 @@ function openSheet(asset, ind) {
   const prices = asset.prices || [];
   const timestamps = asset.timestamps || [];
 
+  // Eixo de tempo: segundos Unix, estritamente crescentes (a biblioteca recusa datas repetidas)
+  const times = [];
+  let lastT = 0;
+  timestamps.forEach(ts => {
+    let t = Math.floor(new Date(ts).getTime() / 1000);
+    if (t <= lastT) t = lastT + 1;
+    times.push(t);
+    lastT = t;
+  });
+
   if (prices.length < 2) {
     const d = document.createElement("div");
     d.className = "chart-empty";
@@ -1112,7 +1122,7 @@ function openSheet(asset, ind) {
     const open = i === 0 ? close : prices[i-1];
     const vol = Math.max(close, open) * 0.008;
     return {
-      time: timestamps[i].split("T")[0],
+      time: times[i],
       open, close,
       high: Math.max(open, close) + vol * Math.random(),
       low: Math.min(open, close) - vol * Math.random()
@@ -1129,7 +1139,7 @@ function openSheet(asset, ind) {
       const sma50 = [];
       for (let i = 49; i < prices.length; i++) {
         const slice = prices.slice(i - 49, i + 1);
-        sma50.push({ time: timestamps[i].split("T")[0], value: slice.reduce((a,b)=>a+b,0)/50 });
+        sma50.push({ time: times[i], value: slice.reduce((a,b)=>a+b,0)/50 });
       }
       chartMain.addLineSeries({ color: "#007AFF", lineWidth: 2, title: "SMA 50" }).setData(sma50);
     }
@@ -1137,7 +1147,7 @@ function openSheet(asset, ind) {
       const sma200 = [];
       for (let i = 199; i < prices.length; i++) {
         const slice = prices.slice(i - 199, i + 1);
-        sma200.push({ time: timestamps[i].split("T")[0], value: slice.reduce((a,b)=>a+b,0)/200 });
+        sma200.push({ time: times[i], value: slice.reduce((a,b)=>a+b,0)/200 });
       }
       chartMain.addLineSeries({ color: "#FF9500", lineWidth: 2, title: "SMA 200" }).setData(sma200);
     }
@@ -1150,8 +1160,8 @@ function openSheet(asset, ind) {
         const mean = slice.reduce((a,b)=>a+b,0)/20;
         const variance = slice.reduce((s,v)=>s+(v-mean)**2,0)/20;
         const sd = Math.sqrt(variance);
-        upper.push({ time: timestamps[i].split("T")[0], value: mean + 2*sd });
-        lower.push({ time: timestamps[i].split("T")[0], value: mean - 2*sd });
+        upper.push({ time: times[i], value: mean + 2*sd });
+        lower.push({ time: times[i], value: mean - 2*sd });
       }
       chartMain.addLineSeries({ color: "rgba(88,86,214,0.5)", lineWidth: 1, lineStyle: 2 }).setData(upper);
       chartMain.addLineSeries({ color: "rgba(88,86,214,0.5)", lineWidth: 1, lineStyle: 2 }).setData(lower);
@@ -1163,11 +1173,11 @@ function openSheet(asset, ind) {
       for (let i = 0; i < prices.length; i++) {
         if (i >= 8) {
           const s = prices.slice(i-8, i+1);
-          tenkan.push({ time: timestamps[i].split("T")[0], value: (Math.max(...s)+Math.min(...s))/2 });
+          tenkan.push({ time: times[i], value: (Math.max(...s)+Math.min(...s))/2 });
         }
         if (i >= 25) {
           const s = prices.slice(i-25, i+1);
-          kijun.push({ time: timestamps[i].split("T")[0], value: (Math.max(...s)+Math.min(...s))/2 });
+          kijun.push({ time: times[i], value: (Math.max(...s)+Math.min(...s))/2 });
         }
       }
       chartMain.addLineSeries({ color: "#34C759", lineWidth: 1, title: "Tenkan" }).setData(tenkan);
@@ -1186,7 +1196,7 @@ function openSheet(asset, ind) {
         if (diff > 0) gains += diff; else losses -= diff;
       }
       const rs = losses === 0 ? 100 : gains / losses;
-      rsiData.push({ time: timestamps[i].split("T")[0], value: 100 - (100 / (1 + rs)) });
+      rsiData.push({ time: times[i], value: 100 - (100 / (1 + rs)) });
     }
     chartRSI.addLineSeries({ color: "#FF9500", lineWidth: 2 }).setData(rsiData);
     if (rsiData.length) {
@@ -1208,7 +1218,7 @@ function openSheet(asset, ind) {
     const sig = ema(line, 9);
     const lineData = [], sigData = [], histData = [];
     for (let i = 26; i < prices.length; i++) {
-      const t = timestamps[i].split("T")[0];
+      const t = times[i];
       lineData.push({ time: t, value: line[i] });
       sigData.push({ time: t, value: sig[i] });
       histData.push({ time: t, value: line[i] - sig[i], color: line[i] - sig[i] >= 0 ? "#34C759" : "#FF3B30" });
