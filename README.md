@@ -130,15 +130,6 @@ supabase functions deploy fetch-br-events       --no-verify-jwt
 
 As funções validam o cabeçalho `Authorization` contra a `service_role`, por isso o `verify_jwt` fica desligado.
 
-## Limitações
-
-- **Médias sobre amostras, não sobre dias.** SMA50 e SMA200 usam as últimas 50 e 200 coletas horárias, cerca de 2 e 8 dias. Enquanto houver menos de 200 amostras, a SMA200 é a média disponível.
-- **Indicadores dos cards aproximados.** RSI ≈ 50 + 40·tanh(15·Δ da SMA200); linha MACD ≈ 100·(SMA50 − SMA200)/SMA200; %B ≈ 0,5 + 0,5·tanh(10·Δ da SMA50); Tenkan = (preço + SMA50)/2, Kijun = SMA50 e nuvem = SMA200. O sinal do MACD inclui um ajuste constante que depende da posição do ativo na lista. Card e gráfico podem divergir.
-- **Candles com máxima e mínima simuladas.** Abertura e fechamento vêm das coletas; máxima e mínima são geradas com variação aleatória e não representam o mercado.
-- **Leitura sem paginação.** O front-end lê `price_history` inteiro, e o Supabase limita por padrão as linhas por requisição (1.000). Com cerca de 864 novas linhas por dia, a leitura pode ficar incompleta.
-- **Mercado fechado repete preço.** Fora do pregão, índices e ações gravam o último valor a cada hora, o que achata médias e bandas.
-- **Fonte não oficial.** A coleta do Yahoo Finance usa um endpoint não oficial e pode mudar sem aviso.
-
 ## Autor e licença
 
 Desenvolvido por **Halyf Soares**. Licença [MIT](LICENSE).
